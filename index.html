@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="MobileOptimized" content="176">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Point Tracker</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #282c34;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 500px;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .score-board {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+            margin-top: 20px;
+        }
+
+        #points {
+            font-size: 24px;
+            color: #61dafb;
+            margin: 5px 0;
+        }
+
+        #high-score {
+            font-size: 18px;
+            color: #ffd700;
+            margin: 5px 0;
+        }
+
+        #container {
+            position: relative;
+            width: min(300px, 70vw);
+            height: min(300px, 70vw);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        #glowing-ball {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background-color: #61dafb;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(97, 218, 251, 0.6);
+            transform: translate(-50%, -50%);
+            animation: float 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .power-container {
+            width: 80%;
+            max-width: 300px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .power-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .power-item:hover {
+            transform: scale(1.02);
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .power-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .power-item.unlocked {
+            background-color: #61dafb;
+            box-shadow: 0 0 15px rgba(97, 218, 251, 0.3);
+        }
+
+        .power-item.active {
+            background-color: #ffd700;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .power-item.active .power-description,
+        .power-item.active .power-cost {
+            color: #000;
+        }
+
+        /* Add hover effects for desktop */
+        @media (min-width: 1024px) {
+            .power-item:not(.locked):hover {
+                transform: scale(1.05);
+            }
+
+            .power-item.active:hover {
+                transform: scale(1.15);
+            }
+        }
+
+        .power-cost {
+            font-size: 14px;
+            color: #ffd700;
+            margin-top: 4px;
+        }
+
+        .power-description {
+            font-size: 12px;
+            color: #ccc;
+            margin-top: 4px;
+        }
+
+        .point-popup {
+            position: absolute;
+            font-size: 18px;
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            opacity: 0;
+            z-index: 1000;
+            color: #61dafb;
+        }
+
+        .point-popup.golden {
+            color: #ffd700;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        .money-bag {
+            font-size: 20px !important;
+            width: 24px !important;
+            height: 24px !important;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%);
+            }
+
+            50% {
+                transform: translate(-50%, -60%);
+            }
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        /* Prevent text selection */
+        * {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* Money shower animation styles */
+        .money-shower-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            overflow: hidden;
+        }
+
+        .money-bag {
+            position: absolute;
+            top: -50px;
+            font-size: 24px;
+            animation: moneyFall 2s linear forwards;
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8),
+                0 0 25px rgba(255, 215, 0, 0.6);
+            color: #ffd700;
+        }
+
+        @keyframes moneyFall {
+            0% {
+                transform: translateY(0) rotate(0deg) scale(1);
+                opacity: 1;
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+            }
+
+            50% {
+                transform: translateY(50vh) rotate(180deg) scale(1.2);
+                opacity: 0.8;
+                filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1));
+            }
+
+            100% {
+                transform: translateY(120vh) rotate(360deg) scale(1);
+                opacity: 0;
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+            }
+        }
+
+        /* Add pulse animation for extra glow effect */
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1));
+            }
+        }
+
+        /* Add these new styles */
+        .menu-button {
+            background-color: rgba(97, 218, 251, 0.1);
+            padding: 12px 20px;
+            border-radius: 20px;
+            color: #61dafb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+        }
+
+        .menu-button:hover {
+            background-color: rgba(97, 218, 251, 0.2);
+            transform: scale(1.02);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #282c34;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 20px rgba(97, 218, 251, 0.2);
+            border: 1px solid rgba(97, 218, 251, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .close-button {
+            font-size: 24px;
+            color: #61dafb;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .referral-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            color: #fff;
+        }
+
+        .bonus-info {
+            font-size: 18px;
+            color: #ffd700;
+            text-align: center;
+            padding: 10px;
+            background-color: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        .referral-count {
+            text-align: center;
+            font-size: 16px;
+            color: #61dafb;
+        }
+
+        .share-button {
+            background-color: #61dafb;
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .share-button:hover {
+            transform: scale(1.02);
+            background-color: #4fa8d8;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleAnim 1s ease-out forwards;
+        }
+
+        @keyframes particleAnim {
+            0% {
+                transform: scale(1) translate(0, 0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0) translate(calc(random() * 100px - 50px),
+                        calc(random() * 100px - 50px));
+                opacity: 0;
+            }
+        }
+    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+
+<body>
+    <div class="game-wrapper">
+        <div class="score-board">
+            <div id="high-score">High Score: 0</div>
+            <div id="points">Points: 0</div>
+        </div>
+
+        <div class="menu-button" onclick="toggleReferralMenu()">
+            <span>👥 Invite Friends</span>
+        </div>
+
+        <div id="container">
+            <div id="glowing-ball"></div>
+        </div>
+
+        <div class="power-container">
+            <div class="power-item locked" id="multiplierPower" onclick="activatePower(this)">
+                <div>×5 Multiplier</div>
+                <div class="power-cost">Unlocks at: 500 High Score</div>
+                <div class="power-description">Multiply points by 5 for 10 seconds</div>
+            </div>
+        </div>
+
+        <div class="modal" id="referralModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Invite Friends</h2>
+                    <span class="close-button" onclick="toggleReferralMenu()">×</span>
+                </div>
+                <div class="referral-info">
+                    <div class="bonus-info">
+                        <span>🎁 Get 100 points for each friend</span>
+                    </div>
+                    <div class="referral-count">
+                        <span>Friends invited: <span id="referralCount">0</span></span>
+                    </div>
+                    <button class="share-button" onclick="shareReferralLink()">
+                        Share Link
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let points = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let canClick = true;
+        let powerMultiplier = 1;
+        let isPowerActive = false;
+
+        // Update high score display
+        document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+
+        // Add this right after the highScore initialization
+        window.onload = function () {
+            // Check if power should be unlocked based on high score
+            const powerElement = document.getElementById('multiplierPower');
+            if (highScore >= 500) {
+                powerElement.classList.remove('locked');
+                powerElement.classList.add('unlocked');
+                powerElement.querySelector('.power-cost').textContent = 'Unlocked!';
+            }
+
+            // Add hover effect for desktop
+            if (window.innerWidth >= 1024) {
+                powerElement.addEventListener('mouseenter', function () {
+                    if (!this.classList.contains('locked')) {
+                        this.style.transform = 'scale(1.05)';
+                    }
+                });
+
+                powerElement.addEventListener('mouseleave', function () {
+                    if (!this.classList.contains('active')) {
+                        this.style.transform = 'scale(1)';
+                    }
+                });
+            }
+        }
+
+        function createPointPopup(x, y, points, type = 'regular') {
+            const popup = document.createElement('div');
+            popup.className = 'point-popup';
+
+            // Add golden class if points are multiplied
+            if (powerMultiplier > 1 || type === 'golden') {
+                popup.className += ' golden';
+            }
+
+            popup.textContent = type === 'cost' ? `-${points}` : `+${points}`;
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+            document.body.appendChild(popup);
+
+            setTimeout(() => {
+                popup.remove();
+            }, 800);
+        }
+
+        function createSparkleBackground() {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle-background';
+            document.body.appendChild(sparkle);
+
+            setTimeout(() => {
+                sparkle.remove();
+            }, 1000);
+        }
+
+        function createDollarBackground() {
+            const container = document.createElement('div');
+            container.className = 'dollar-background';
+
+            // Create multiple dollar signs
+            for (let i = 0; i < 10; i++) {
+                const dollar = document.createElement('div');
+                dollar.className = 'dollar-background';
+                dollar.style.left = `${Math.random() * 100}%`;
+                dollar.style.top = `${Math.random() * 100}%`;
+                dollar.style.animationDelay = `${Math.random() * 0.5}s`;
+                container.appendChild(dollar);
+            }
+
+            document.body.appendChild(container);
+            setTimeout(() => container.remove(), 2000);
+        }
+
+        // Add sound effects (optional)
+        const sounds = {
+            click: new Audio('click.mp3'),
+            bonus: new Audio('bonus.mp3'),
+            powerUp: new Audio('powerup.mp3')
+        };
+
+        // Add vibration feedback for mobile
+        function vibrate(duration = 50) {
+            if (navigator.vibrate) {
+                navigator.vibrate(duration);
+            }
+        }
+
+        // Add particle effects on click
+        function createClickParticles(x, y) {
+            const particles = 10;
+            const colors = ['#61dafb', '#ffd700', '#ff7675'];
+
+            for (let i = 0; i < particles; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+                document.body.appendChild(particle);
+
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // Update addPoint function to include these effects
+        function addPoint(event) {
+            if (!canClick) return;
+
+            vibrate();
+            sounds.click.play();
+            createClickParticles(event.clientX, event.clientY);
+
+            canClick = false;
+            setTimeout(() => canClick = true, 100);
+
+            const pointsToAdd = parseInt(powerMultiplier);
+            const x = event.clientX - 10;
+            const y = event.clientY - 20;
+
+            // Create point popup with appropriate styling
+            createPointPopup(x, y, pointsToAdd, powerMultiplier > 1 ? 'golden' : 'regular');
+
+            // Get the existing high score and add new points
+            let currentHighScore = parseInt(localStorage.getItem('highScore')) || 0;
+            currentHighScore += pointsToAdd;
+
+            // Update points and high score
+            points += pointsToAdd;
+            highScore = currentHighScore;
+            localStorage.setItem('highScore', highScore);
+
+            // Update displays
+            const pointsDiv = document.getElementById('points');
+            const ball = document.getElementById('glowing-ball');
+
+            pointsDiv.textContent = `Points: ${points}`;
+            document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+
+            pointsDiv.classList.add('animate');
+            ball.classList.add('clicked');
+
+            setTimeout(() => {
+                pointsDiv.classList.remove('animate');
+                ball.classList.remove('clicked');
+            }, 100);
+        }
+
+        function createMoneyBagRain() {
+            const container = document.createElement('div');
+            container.className = 'money-shower-container';
+            document.body.appendChild(container);
+
+            const bagCount = 30;
+            const duration = 2000;
+
+            for (let i = 0; i < bagCount; i++) {
+                setTimeout(() => {
+                    const moneyBag = document.createElement('div');
+                    moneyBag.className = 'money-bag';
+                    moneyBag.innerHTML = '';
+
+                    // Random horizontal position
+                    moneyBag.style.left = `${Math.random() * 100}%`;
+
+                    // Random animation duration
+                    const animDuration = (duration * 0.8) + (Math.random() * duration * 0.4);
+                    moneyBag.style.animationDuration = `${animDuration}ms`;
+
+                    // Random size with glow intensity variation
+                    const size = 20 + Math.random() * 20;
+                    moneyBag.style.fontSize = `${size}px`;
+
+                    // Add random glow intensity
+                    const glowIntensity = 0.6 + Math.random() * 0.4;
+                    moneyBag.style.filter = `drop-shadow(0 0 ${10 * glowIntensity}px rgba(255, 215, 0, ${glowIntensity}))
+                                           drop-shadow(0 0 ${20 * glowIntensity}px rgba(255, 215, 0, ${glowIntensity * 0.6}))`;
+
+                    container.appendChild(moneyBag);
+
+                    // Remove money bag after animation
+                    setTimeout(() => {
+                        moneyBag.remove();
+                    }, animDuration);
+                }, i * (duration / bagCount));
+            }
+
+            // Remove container after all animations are done
+            setTimeout(() => {
+                container.remove();
+            }, duration + 1000);
+        }
+
+        // Optional: Add this function for an extra sparkle effect
+        function createSparkleEffect(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            sparkle.style.left = `${x}px`;
+            sparkle.style.top = `${y}px`;
+            document.body.appendChild(sparkle);
+
+            setTimeout(() => sparkle.remove(), 1000);
+        }
+
+        function activatePower(powerElement) {
+            if (powerElement.classList.contains('locked')) {
+                if (highScore >= 500) {
+                    // Create sparkle and money bag effects
+                    createSparkleBackground();
+                    createMoneyBagRain();
+
+                    // Show cost animation
+                    const highScoreElement = document.getElementById('high-score');
+                    const rect = highScoreElement.getBoundingClientRect();
+                    createPointPopup(rect.right + 10, rect.top, 500, 'cost');
+
+                    // Deduct from high score
+                    highScore -= 500;
+                    localStorage.setItem('highScore', highScore);
+                    document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+
+                    // Unlock the power
+                    powerElement.classList.remove('locked');
+                    powerElement.classList.add('unlocked');
+                    powerElement.querySelector('.power-cost').textContent = 'Unlocked!';
+
+                    // Activate the power
+                    activateMultiplier();
+                } else {
+                    powerElement.querySelector('.power-cost').textContent =
+                        `Need ${500 - highScore} more high score points`;
+                    setTimeout(() => {
+                        powerElement.querySelector('.power-cost').textContent =
+                            'Unlocks at: 500 High Score';
+                    }, 2000);
+                }
+            } else if (!isPowerActive) {
+                // Create multiple sparkle effects
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const x = Math.random() * window.innerWidth;
+                        const y = Math.random() * window.innerHeight;
+                        createSparkleEffect(x, y);
+                    }, i * 200);
+                }
+                createMoneyBagRain();
+                activateMultiplier();
+            }
+        }
+
+        function activateMultiplier() {
+            if (isPowerActive) return;
+
+            isPowerActive = true;
+            powerMultiplier = 5;
+            const powerElement = document.getElementById('multiplierPower');
+            powerElement.classList.add('active');
+            powerElement.classList.add('unlocked');
+
+            // Start countdown
+            let timeLeft = 10;
+            const countdownInterval = setInterval(() => {
+                powerElement.querySelector('.power-description').textContent =
+                    `Active for ${timeLeft} seconds`;
+                timeLeft--;
+
+                if (timeLeft < 0) {
+                    clearInterval(countdownInterval);
+                    powerMultiplier = 1;
+                    isPowerActive = false;
+                    powerElement.classList.remove('active');
+                    powerElement.querySelector('.power-description').textContent =
+                        'Multiply points by 5 for 10 seconds';
+                }
+            }, 1000);
+        }
+
+        // Update the click/touch handling
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('container');
+
+            // Mouse click handler
+            container.addEventListener('click', function (e) {
+                e.preventDefault();
+                addPoint(e);
+            });
+
+            // Touch handler for mobile
+            container.addEventListener('touchstart', function (e) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                addPoint({
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+            }, { passive: false });
+
+            // Prevent unwanted mobile behaviors
+            document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+            document.addEventListener('gesturestart', e => e.preventDefault());
+        });
+
+        // Add these new functions
+        let referralCount = parseInt(localStorage.getItem('referralCount')) || 0;
+
+        function toggleReferralMenu() {
+            const modal = document.getElementById('referralModal');
+            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+            updateReferralCount();
+        }
+
+        function updateReferralCount() {
+            document.getElementById('referralCount').textContent = referralCount;
+        }
+
+        function shareReferralLink() {
+            if (tg.initDataUnsafe?.user?.id) {
+                const userId = tg.initDataUnsafe.user.id;
+                const referralLink = `https://t.me/${your_bot_username}?start=ref_${userId}`;
+                tg.switchInlineQuery(referralLink, ['users', 'groups', 'channels']);
+            }
+        }
+
+        // Handle referral bonus
+        function handleReferralBonus() {
+            referralCount++;
+            localStorage.setItem('referralCount', referralCount);
+
+            // Add bonus points
+            const bonusPoints = 100;
+            points += bonusPoints;
+            highScore = Math.max(highScore, points);
+            localStorage.setItem('highScore', highScore);
+
+            // Update displays
+            updateReferralCount();
+            document.getElementById('points').textContent = `Points: ${points}`;
+            document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+
+            // Show bonus animation
+            createPointPopup(
+                window.innerWidth / 2,
+                window.innerHeight / 2,
+                bonusPoints,
+                'golden'
+            );
+            createMoneyBagRain();
+        }
+
+        let tg = window.Telegram.WebApp;
+
+        // Initialize the Web App
+        document.addEventListener('DOMContentLoaded', function () {
+            tg.ready();
+            // Expand to full height
+            tg.expand();
+
+            // Set header color (optional)
+            tg.setHeaderColor('#282c34');
+
+            // Set background color
+            tg.setBackgroundColor('#282c34');
+        });
+
+        // Verify webapp data
+        const webAppData = tg.initData;
+        // Use this to verify the user is coming from Telegram
+
+        // Add back button handler
+        tg.BackButton.onClick(() => {
+            // Handle back button press
+        });
+
+        // Add main button
+        tg.MainButton.setText('Share Score');
+        tg.MainButton.onClick(() => {
+            // Share score functionality
+        });
+    </script>
+</body>
+
+</html>
