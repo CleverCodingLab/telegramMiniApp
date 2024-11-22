@@ -153,20 +153,34 @@
         }
 
         .point-popup {
-            position: absolute;
-            font-size: 18px;
+            position: fixed;
+            font-size: 24px;
             font-weight: bold;
             pointer-events: none;
-            animation: floatUp 0.8s ease-out forwards;
-            opacity: 0;
             z-index: 1000;
+            animation: popupFloat 0.8s ease-out forwards;
             color: #61dafb;
         }
 
         .point-popup.golden {
             color: #ffd700;
-            font-size: 24px;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        .point-popup:not(.golden) {
+            text-shadow: 0 0 10px rgba(97, 218, 251, 0.8);
+        }
+
+        @keyframes popupFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-50px) scale(1.2);
+                opacity: 0;
+            }
         }
 
         .money-bag {
@@ -499,7 +513,7 @@
         <div class="power-container">
             <div class="power-item locked" id="multiplierPower" onclick="activatePower(this)">
                 <div>×5 Multiplier</div>
-                <div class="power-cost">Unlocks at: 500 High Score</div>
+                <div class="power-cost">Unlocks at: 50 High Score</div>
                 <div class="power-description">Multiply points by 5 for 10 seconds</div>
             </div>
         </div>
@@ -539,7 +553,7 @@
         window.onload = function () {
             // Check if power should be unlocked based on high score
             const powerElement = document.getElementById('multiplierPower');
-            if (highScore >= 500) {
+            if (highScore >= 50) {
                 powerElement.classList.remove('locked');
                 powerElement.classList.add('unlocked');
                 powerElement.querySelector('.power-cost').textContent = 'Unlocked!';
@@ -565,16 +579,21 @@
             const popup = document.createElement('div');
             popup.className = 'point-popup';
 
-            // Add golden class if points are multiplied
-            if (powerMultiplier > 1 || type === 'golden') {
+            // Add golden class only for multiplied points or costs
+            if (type === 'golden' || type === 'cost') {
                 popup.className += ' golden';
             }
 
+            // Show minus sign for costs, plus sign for points
             popup.textContent = type === 'cost' ? `-${points}` : `+${points}`;
+
+            // Position the popup
             popup.style.left = `${x}px`;
             popup.style.top = `${y}px`;
+
             document.body.appendChild(popup);
 
+            // Remove the popup after animation
             setTimeout(() => {
                 popup.remove();
             }, 800);
@@ -735,9 +754,14 @@
             setTimeout(() => sparkle.remove(), 1000);
         }
 
-        function activatePower(powerElement) {
+        function activatePowerold(powerElement) {
+
+            // Get current high score from localStorage
+            let currentHighScore = parseInt(localStorage.getItem('highScore')) || 0;
+
             if (powerElement.classList.contains('locked')) {
-                if (highScore >= 500) {
+
+                if (currentHighScore >= 50) { // Changed from 500 to 50 as per your original requirement
                     // Get the element's position for the blast animation
                     const rect = powerElement.getBoundingClientRect();
                     const centerX = rect.left + rect.width / 2;
@@ -752,12 +776,15 @@
                     // Show cost animation
                     const highScoreElement = document.getElementById('high-score');
                     const rect2 = highScoreElement.getBoundingClientRect();
-                    createPointPopup(rect2.right + 10, rect2.top, 500, 'cost');
+                    createPointPopup(rect2.right + 10, rect2.top, 50, 'cost');
 
-                    // Deduct from high score
-                    highScore -= 500;
-                    localStorage.setItem('highScore', highScore);
-                    document.getElementById('high-score').textContent = `High Score: ${highScore}`;
+                    // Deduct from high score and update localStorage
+                    currentHighScore -= 50;
+                    highScore = currentHighScore; // Update the global highScore variable
+                    localStorage.setItem('highScore', currentHighScore);
+
+                    // Update the display immediately
+                    document.getElementById('high-score').textContent = `High Score: ${currentHighScore}`;
 
                     // Unlock the power
                     powerElement.classList.remove('locked');
@@ -767,14 +794,20 @@
                     // Activate the power
                     activateMultiplier();
                 } else {
+                    // Show how many more points are needed
                     powerElement.querySelector('.power-cost').textContent =
-                        `Need ${500 - highScore} more high score points`;
+                        `Need ${50 - currentHighScore} more high score points`;
                     setTimeout(() => {
                         powerElement.querySelector('.power-cost').textContent =
-                            'Unlocks at: 500 High Score';
+                            'Unlocks at: 50 High Score';
                     }, 2000);
                 }
             } else if (!isPowerActive) {
+
+                // Deduct from high score and update localStorage
+                currentHighScore -= 50;
+                highScore = currentHighScore; // Update the global highScore variable
+                localStorage.setItem('highScore', currentHighScore);
                 // Create money bag effects when activating unlocked power
                 const rect = powerElement.getBoundingClientRect();
                 createMoneyBagBlast(rect.left + rect.width / 2, rect.top + rect.height / 2);
@@ -783,6 +816,82 @@
                 activateMultiplier();
             }
         }
+
+        function activatePower(powerElement) {
+            // Get current high score from localStorage
+            let currentHighScore = parseInt(localStorage.getItem('highScore')) || 0;
+
+            if (powerElement.classList.contains('locked')) {
+                if (currentHighScore >= 50) {
+                    // Get the element's position for the blast animation
+                    const rect = powerElement.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    // Create money bag blast effect
+                    createMoneyBagBlast(centerX, centerY);
+                    createMoneyBagRain();
+
+                    // Show cost animation
+                    const highScoreElement = document.getElementById('high-score');
+                    const rect2 = highScoreElement.getBoundingClientRect();
+                    createPointPopup(rect2.right + 10, rect2.top, 50, 'cost');
+
+                    // Deduct from high score and update localStorage
+                    currentHighScore -= 50;
+                    highScore = currentHighScore; // Update the global highScore variable
+                    localStorage.setItem('highScore', currentHighScore);
+
+                    // Update the display immediately
+                    document.getElementById('high-score').textContent = `High Score: ${currentHighScore}`;
+
+                    // Unlock the power
+                    powerElement.classList.remove('locked');
+                    powerElement.classList.add('unlocked');
+                    powerElement.querySelector('.power-cost').textContent = 'Unlocked!';
+
+                    activateMultiplier();
+                } else {
+                    powerElement.querySelector('.power-cost').textContent =
+                        `Need ${50 - currentHighScore} more high score points`;
+                    setTimeout(() => {
+                        powerElement.querySelector('.power-cost').textContent =
+                            'Unlocks at: 50 High Score';
+                    }, 2000);
+                }
+            } else if (!isPowerActive) {
+                if (currentHighScore >= 50) {  // Check if enough points to activate
+                    // Deduct from high score and update localStorage
+                    currentHighScore -= 50;
+                    highScore = currentHighScore; // Update the global highScore variable
+                    localStorage.setItem('highScore', currentHighScore);
+
+                    // Update the display immediately
+                    document.getElementById('high-score').textContent = `High Score: ${currentHighScore}`;
+
+                    // Show cost animation
+                    const highScoreElement = document.getElementById('high-score');
+                    const rect2 = highScoreElement.getBoundingClientRect();
+                    createPointPopup(rect2.right + 10, rect2.top, 50, 'cost');
+
+                    // Create money bag effects
+                    const rect = powerElement.getBoundingClientRect();
+                    createMoneyBagBlast(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                    createMoneyBagRain();
+
+                    activateMultiplier();
+                } else {
+                    // Show insufficient points message
+                    powerElement.querySelector('.power-description').textContent =
+                        `Need ${50 - currentHighScore} more points to activate`;
+                    setTimeout(() => {
+                        powerElement.querySelector('.power-description').textContent =
+                            'Multiply points by 5 for 10 seconds';
+                    }, 2000);
+                }
+            }
+        }
+
 
         function activateMultiplier() {
             if (isPowerActive) return;
