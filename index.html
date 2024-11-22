@@ -213,19 +213,33 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 999;
             overflow: hidden;
         }
 
         .money-bag {
             position: absolute;
             top: -50px;
-            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            background-image: url('money-bag.png');
+            background-size: contain;
+            background-repeat: no-repeat;
             animation: moneyFall 2s linear forwards;
             filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6)) drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8),
-                0 0 25px rgba(255, 215, 0, 0.6);
-            color: #ffd700;
+        }
+
+        .money-bag-blast {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            width: 40px;
+            height: 40px;
+            background-image: url('money-bag.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0;
+            animation: moneyBagBlast 1s ease-out forwards;
         }
 
         @keyframes moneyFall {
@@ -245,6 +259,18 @@
                 transform: translateY(120vh) rotate(360deg) scale(1);
                 opacity: 0;
                 filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+            }
+        }
+
+        @keyframes moneyBagBlast {
+            0% {
+                transform: scale(0.3) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(2) rotate(360deg);
+                opacity: 0;
             }
         }
 
@@ -390,6 +416,64 @@
             100% {
                 transform: scale(0) translate(calc(random() * 100px - 50px),
                         calc(random() * 100px - 50px));
+                opacity: 0;
+            }
+        }
+
+        /* Add these new styles to your existing CSS */
+        .dollar-blast {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+            width: 40px;
+            height: 40px;
+            background-image: url('data:image/png;base64,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');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0;
+            animation: dollarBlast 1s ease-out forwards;
+        }
+
+        @keyframes dollarBlast {
+            0% {
+                transform: scale(0.3) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.5) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .dollar-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .dollar-bill {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background-image: url('data:image/png;base64,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');
+            background-size: contain;
+            background-repeat: no-repeat;
+            animation: dollarRain 2s linear forwards;
+        }
+
+        @keyframes dollarRain {
+            0% {
+                transform: translateY(-50px) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(120vh) rotate(720deg);
                 opacity: 0;
             }
         }
@@ -622,12 +706,8 @@
 
                     // Random size with glow intensity variation
                     const size = 20 + Math.random() * 20;
-                    moneyBag.style.fontSize = `${size}px`;
-
-                    // Add random glow intensity
-                    const glowIntensity = 0.6 + Math.random() * 0.4;
-                    moneyBag.style.filter = `drop-shadow(0 0 ${10 * glowIntensity}px rgba(255, 215, 0, ${glowIntensity}))
-                                           drop-shadow(0 0 ${20 * glowIntensity}px rgba(255, 215, 0, ${glowIntensity * 0.6}))`;
+                    moneyBag.style.width = `${size}px`;
+                    moneyBag.style.height = `${size}px`;
 
                     container.appendChild(moneyBag);
 
@@ -658,14 +738,21 @@
         function activatePower(powerElement) {
             if (powerElement.classList.contains('locked')) {
                 if (highScore >= 500) {
-                    // Create sparkle and money bag effects
-                    createSparkleBackground();
+                    // Get the element's position for the blast animation
+                    const rect = powerElement.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+
+                    // Create money bag blast effect
+                    createMoneyBagBlast(centerX, centerY);
+
+                    // Create money bag rain effect
                     createMoneyBagRain();
 
                     // Show cost animation
                     const highScoreElement = document.getElementById('high-score');
-                    const rect = highScoreElement.getBoundingClientRect();
-                    createPointPopup(rect.right + 10, rect.top, 500, 'cost');
+                    const rect2 = highScoreElement.getBoundingClientRect();
+                    createPointPopup(rect2.right + 10, rect2.top, 500, 'cost');
 
                     // Deduct from high score
                     highScore -= 500;
@@ -688,15 +775,11 @@
                     }, 2000);
                 }
             } else if (!isPowerActive) {
-                // Create multiple sparkle effects
-                for (let i = 0; i < 5; i++) {
-                    setTimeout(() => {
-                        const x = Math.random() * window.innerWidth;
-                        const y = Math.random() * window.innerHeight;
-                        createSparkleEffect(x, y);
-                    }, i * 200);
-                }
+                // Create money bag effects when activating unlocked power
+                const rect = powerElement.getBoundingClientRect();
+                createMoneyBagBlast(rect.left + rect.width / 2, rect.top + rect.height / 2);
                 createMoneyBagRain();
+
                 activateMultiplier();
             }
         }
@@ -767,10 +850,40 @@
         }
 
         function shareReferralLink() {
-            if (tg.initDataUnsafe?.user?.id) {
+            try {
+                if (!tg.initDataUnsafe?.user?.id) {
+                    tg.showPopup({
+                        title: 'Error',
+                        message: 'Unable to generate share link. Please try again.',
+                        buttons: [{ type: 'ok' }]
+                    });
+                    return;
+                }
+
                 const userId = tg.initDataUnsafe.user.id;
-                const referralLink = `https://t.me/${your_bot_username}?start=ref_${userId}`;
-                tg.switchInlineQuery(referralLink, ['users', 'groups', 'channels']);
+                const referralLink = `https://t.me/digiRupee_bot?start=ref_${userId}`;
+
+                tg.showPopup({
+                    title: 'Share Game',
+                    message: 'Share this game with your friends and earn 100 points for each referral!',
+                    buttons: [
+                        { type: 'default', text: 'Share', data: 'share' },
+                    ]
+                }, function (buttonId) {
+                    if (buttonId === 'share') {
+                        tg.shareUrl({
+                            url: referralLink,
+                            text: '🎮 Join me in this awesome clicking game and earn points! Use my referral link:'
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error('Share error:', error);
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Something went wrong. Please try again.',
+                    buttons: [{ type: 'ok' }]
+                });
             }
         }
 
@@ -805,14 +918,17 @@
         // Initialize the Web App
         document.addEventListener('DOMContentLoaded', function () {
             tg.ready();
-            // Expand to full height
             tg.expand();
 
-            // Set header color (optional)
-            tg.setHeaderColor('#282c34');
+            // Update MainButton configuration
+            tg.MainButton.setText('Share Game');
+            tg.MainButton.show();
+            tg.MainButton.onClick(shareReferralLink);
 
-            // Set background color
-            tg.setBackgroundColor('#282c34');
+            // Handle incoming referrals
+            if (tg.initDataUnsafe?.start_param?.startsWith('ref_')) {
+                handleReferralBonus();
+            }
         });
 
         // Verify webapp data
@@ -829,6 +945,86 @@
         tg.MainButton.onClick(() => {
             // Share score functionality
         });
+
+        function validateTelegramWebAppData(initData) {
+            // Basic validation
+            if (!initData) return false;
+
+            try {
+                const urlParams = new URLSearchParams(initData);
+                const hash = urlParams.get('hash');
+                const auth_date = urlParams.get('auth_date');
+
+                // Check if essential data exists
+                if (!hash || !auth_date) return false;
+
+                // Additional validation can be added here
+                return true;
+            } catch (e) {
+                console.error('Validation error:', e);
+                return false;
+            }
+        }
+
+        // Use it in your initialization
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!validateTelegramWebAppData(tg.initData)) {
+                console.error('Invalid Telegram Web App data');
+                return;
+            }
+            // ... rest of your initialization code
+        });
+
+        // Add these new functions
+        function createDollarBlast(x, y) {
+            const dollar = document.createElement('div');
+            dollar.className = 'dollar-blast';
+            dollar.style.left = `${x - 20}px`;
+            dollar.style.top = `${y - 20}px`;
+            document.body.appendChild(dollar);
+
+            setTimeout(() => {
+                dollar.remove();
+            }, 1000);
+        }
+
+        function createDollarRain() {
+            const container = document.createElement('div');
+            container.className = 'dollar-rain';
+            document.body.appendChild(container);
+
+            const numberOfDollars = 30;
+
+            for (let i = 0; i < numberOfDollars; i++) {
+                setTimeout(() => {
+                    const dollar = document.createElement('div');
+                    dollar.className = 'dollar-bill';
+                    dollar.style.left = `${Math.random() * 100}%`;
+                    dollar.style.animationDuration = `${1.5 + Math.random()}s`;
+                    container.appendChild(dollar);
+
+                    setTimeout(() => {
+                        dollar.remove();
+                    }, 2000);
+                }, i * (2000 / numberOfDollars));
+            }
+
+            setTimeout(() => {
+                container.remove();
+            }, 3000);
+        }
+
+        function createMoneyBagBlast(x, y) {
+            const moneyBag = document.createElement('div');
+            moneyBag.className = 'money-bag-blast';
+            moneyBag.style.left = `${x - 20}px`;
+            moneyBag.style.top = `${y - 20}px`;
+            document.body.appendChild(moneyBag);
+
+            setTimeout(() => {
+                moneyBag.remove();
+            }, 1000);
+        }
     </script>
 </body>
 
